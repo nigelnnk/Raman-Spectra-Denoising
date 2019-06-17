@@ -53,7 +53,7 @@ def convo_filter_n(spectrum, window_size, n):
     return ans
 
 
-@njit
+# @njit
 def iter_convo_filter(spectrum, window_size):
     """
     Smooths spectrum as detailed in [1] Fully Automated High-Performance Signal-to-Noise
@@ -129,12 +129,8 @@ def get_noise(spectrum):
     return new
 
 
-@njit
-def hann(y):
-    return np.hanning(y)
-
 def main():
-    print(hann(5))
+    print("hi")
 
 if __name__ == "__main__":
     main()

@@ -67,8 +67,12 @@ def main():
     ax[1, 1].plot(x[:-1], cs, color='C1')
     ax[1, 1].set_title("Corrected")
 
-    n = sf.get_noise(noise)
-    ax[1, 2].plot(np.arange(n.size), n, color='C1')
+    # new_x, new_y = pf.detect_peaks(cs, x[:-1])
+    # print(new_x)
+    # print(new_y)
+    # ax[1, 1].plot(new_x, new_y, color='b', marker="x", markersize=6)
+
+    ax[1, 2].plot(x[:-1], -np.diff(signal))
     ax[1, 2].set_title("Noise")
 
     plt.show()
