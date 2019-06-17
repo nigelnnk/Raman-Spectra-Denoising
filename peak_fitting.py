@@ -16,9 +16,32 @@ def get_corrected_spectrum(spectrum, noise_window, baseline_window):
     :return: differentiated and baseline-corrected differentiated spectra
     """
     ans = sf.convo_filter_n(spectrum, noise_window, 3)
-    ds = sf.convo_filter_n(np.diff(ans), baseline_window, 1)
+    ds = sf.convo_filter_n(-np.diff(ans), baseline_window, 1)  # difference must be negated for correct calculations
     cs = ds - sf.convo_filter_n(ds, baseline_window, 10)
     return ds, cs
+
+
+def detect_peaks(spectrum, wavenumbers):
+    # TODO documentation for this function
+    # TODO how to extract peaks using zero-max-zero-min-zero pattern
+    sign_change = np.asarray(np.sign(spectrum[:-1]) != np.sign(spectrum[1:])).nonzero()
+
+    zeros_y = spectrum[sign_change]
+    zeros_x = wavenumbers[sign_change]
+    diff = np.diff(spectrum)
+    maxima = np.asarray(np.sign(diff[:-1]) > np.sign(diff[1:])).nonzero()
+    minima = np.asarray(np.sign(diff[:-1]) < np.sign(diff[1:])).nonzero()
+
+    h_y = spectrum[maxima]
+    significant_h = np.extract(h_y/np.amax(h_y) > 0.1, maxima)
+    h_y = spectrum[significant_h]
+    h_x = wavenumbers[significant_h]
+
+    l_y = spectrum[minima]
+    significant_l = np.extract(l_y / np.amin(l_y) > 0.1, minima)
+    l_y = spectrum[significant_l]
+    l_x = wavenumbers[significant_l]
+    return zeros_x, zeros_y, h_x, h_y, l_x, l_y
 
 
 def normalise(y):
