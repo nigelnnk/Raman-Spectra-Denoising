@@ -130,7 +130,7 @@ def get_noise(spectrum):
 
 
 def main():
-    print("hi")
+    pass
 
 if __name__ == "__main__":
     main()
