@@ -53,14 +53,14 @@ def detect_peaks(spectrum, diff_spectrum, wavenumbers):
 
     # Calculate (x,y) values of peaks
     h_y = diff_spectrum[maxima]
-    significant_h = np.extract(h_y / np.amax(h_y) > cutoff / 2, maxima)
+    significant_h = np.extract(h_y / np.amax(h_y) > cutoff, maxima)
     h_y = diff_spectrum[significant_h]
     h_x = wavenumbers[significant_h]
     highs_x = np.copy(h_x)
 
     # Calculate (x,y) values of troughs
     l_y = diff_spectrum[minima]
-    significant_l = np.extract(l_y / np.amin(l_y) > cutoff / 2, minima)
+    significant_l = np.extract(l_y / np.amin(l_y) > cutoff, minima)
     l_y = diff_spectrum[significant_l]
     l_x = wavenumbers[significant_l]
     lows_x = np.copy(l_x)
@@ -93,7 +93,7 @@ def detect_peaks(spectrum, diff_spectrum, wavenumbers):
         if h_position + 1 == l_position:
             height = smooth[np.searchsorted(wavenumbers, zeros_x[h_position])]
             print("{}\t{}".format(zeros_x[h_position], height))
-            if height / max_height >= cutoff:
+            if height / max_height >= cutoff and l_position + 1 < zeros_x.size:
                 peaks.append(zeros_x[h_position])
                 peak_heights.append(height)
                 peak_widths.append([zeros_x[h_position - 1], zeros_x[l_position + 1]])
