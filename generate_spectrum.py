@@ -6,7 +6,7 @@ from numba import *
 from scipy import signal as sig
 import saveLoadCSV as sl
 import smoothing_functions as sf
-import peak_fitting as pf
+import peak_detection as pd
 
 LSIGNAL = np.array([[500, 40, 0.5], [825, 10, 1], [900, 25, 3], [1200, 10, 5]])
 
@@ -75,13 +75,13 @@ def main():
     ax[1, 0].plot(x, convolved)
     ax[1, 0].set_title("Iterative Convolution Smoothing")
 
-    ds, cs = pf.get_corrected_spectrum(noise, 5, 53)
+    ds, cs = pd.get_corrected_spectrum(noise, 5, 53)
     ax[0, 2].plot(x[:-1], ds, color='C1')
     ax[0, 2].set_title("Differentiated")
     ax[1, 2].plot(x[:-1], cs, color='C1')
     ax[1, 2].set_title("Corrected")
 
-    # new_x, new_y = pf.detect_peaks(cs, x[:-1])
+    # new_x, new_y = pd.detect_peaks(cs, x[:-1])
     # print(new_x)
     # print(new_y)
     # ax[1, 1].plot(new_x, new_y, color='b', marker="x", markersize=6)

@@ -4,7 +4,7 @@ from numba import *
 from scipy import signal as sig
 import saveLoadCSV as sl
 import smoothing_functions as sf
-import peak_fitting as pf
+import peak_detection as pd
 import generate_spectrum as gs
 
 
@@ -23,8 +23,8 @@ def main():
     # rand = np.random.randn(x.size) * np.amax(signal) / 20
     # noise = rand + signal
 
-    ds, cs = pf.get_corrected_spectrum(noise, 5, 53)
-    result_diff, result_original = pf.detect_peaks(noise, cs, x[:-1])
+    ds, cs = pd.get_corrected_spectrum(noise, 5, 23)
+    result_diff, result_original = pd.detect_peaks(noise, cs, x[:-1])
 
     fig, ax = plt.subplots(nrows=2, ncols=2)
     # ax.plot(x, sf.convo_filter_n(noise, 5, 20)/4, color='k', alpha=0.3)
@@ -43,7 +43,7 @@ def main():
     ax[1, 1].remove()
     big = fig.add_subplot(g[0:, -1])
 
-    sm = sf.convo_filter_n(noise, 5, 20)
+    sm = sf.convo_filter_n(noise, 5, 3)
     big.plot(x, noise, color='k', alpha=0.5, label="Noisy spectrum")
     big.plot(x, sm, color='C1', linewidth=2, label="Smoothed spectrum")
     big.scatter(result_original["peaks_x"], result_original["peaks_y"], color='m', marker="s", label="Peaks", zorder=10)
@@ -65,4 +65,4 @@ def generate_spectra():
 
 
 if __name__ == "__main__":
-    generate_spectra()
+    main()
