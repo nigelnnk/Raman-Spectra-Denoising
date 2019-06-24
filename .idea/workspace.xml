@@ -4,7 +4,8 @@
     <list default="true" id="7c30b3da-0773-496c-a953-b163083ecf2b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/generate_spectrum.py" beforeDir="false" afterPath="$PROJECT_DIR$/generate_spectrum.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/peak_fitting.py" beforeDir="false" afterPath="$PROJECT_DIR$/peak_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/peak_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/peak_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/saveLoadCSV.py" beforeDir="false" afterPath="$PROJECT_DIR$/saveLoadCSV.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -15,11 +16,24 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="153">
-              <caret line="16" column="25" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
+            <state relative-caret-position="-539">
+              <caret line="56" column="35" lean-forward="true" selection-start-line="56" selection-start-column="35" selection-end-line="56" selection-end-column="35" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+                <marker date="1561343910403" expanded="true" signature="3000:3138" ph="..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/peak_detection.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="461">
+              <caret line="120" column="43" selection-start-line="120" selection-start-column="43" selection-end-line="120" selection-end-column="43" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -27,13 +41,25 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/peak_detection.py">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/smoothing_functions.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="397">
-              <caret line="125" column="31" selection-start-line="125" selection-start-column="31" selection-end-line="125" selection-end-column="31" />
+            <state relative-caret-position="1343">
+              <caret line="80" column="14" selection-start-line="80" selection-start-column="14" selection-end-line="80" selection-end-column="14" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/generate_spectrum.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="136">
+              <caret line="8" column="27" selection-start-line="8" selection-start-column="27" selection-end-line="8" selection-end-column="27" />
+              <folding>
+                <element signature="e#0#11#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -75,13 +101,14 @@
       <list>
         <option value="$PROJECT_DIR$/try1.py" />
         <option value="$USER_HOME$/Downloads/ifors/ifors/ifors/ifors_optimize_python.py" />
-        <option value="$PROJECT_DIR$/saveLoadCSV.py" />
         <option value="$PROJECT_DIR$/noisySpectrum.py" />
         <option value="$PROJECT_DIR$/Scripts/smoothing_functions.py" />
         <option value="$PROJECT_DIR$/generateSpectrum.py" />
         <option value="$PROJECT_DIR$/smoothing_functions.py" />
         <option value="$PROJECT_DIR$/peak_fitting.py" />
         <option value="$PROJECT_DIR$/generate_spectrum.py" />
+        <option value="$PROJECT_DIR$/saveLoadCSV.py" />
+        <option value="$PROJECT_DIR$/peak_detection.py" />
         <option value="$PROJECT_DIR$/test.py" />
       </list>
     </option>
@@ -176,6 +203,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="saveLoadCSV" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="SpectrumGeneration" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/saveLoadCSV.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="smoothing_functions" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="SpectrumGeneration" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -223,10 +271,12 @@
       <item itemvalue="Python.peak_fitting" />
       <item itemvalue="Python.smoothing_functions" />
       <item itemvalue="Python.test" />
+      <item itemvalue="Python.saveLoadCSV" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.test" />
+        <item itemvalue="Python.saveLoadCSV" />
         <item itemvalue="Python.peak_fitting" />
         <item itemvalue="Python.generate_spectrum" />
         <item itemvalue="Python.smoothing_functions" />
@@ -265,13 +315,14 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="667" y="-1050" width="854" height="1017" extended-state="0" />
+    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.09436274" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.09436274" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.4987745" visible="true" weight="0.270362" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32918552" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.4987745" visible="true" weight="0.270362" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39932126" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -389,8 +440,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/saveLoadCSV.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="32" column="23" lean-forward="true" selection-start-line="32" selection-start-column="23" selection-end-line="32" selection-end-column="23" />
+        <state relative-caret-position="379">
+          <caret line="60" column="19" selection-start-line="60" selection-start-column="19" selection-end-line="60" selection-end-column="19" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -399,7 +450,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/smoothing_functions.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1360">
+        <state relative-caret-position="1343">
           <caret line="80" column="14" selection-start-line="80" selection-start-column="14" selection-end-line="80" selection-end-column="14" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
@@ -417,22 +468,23 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test.py">
+    <entry file="file://$PROJECT_DIR$/peak_detection.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="16" column="25" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
+        <state relative-caret-position="461">
+          <caret line="120" column="43" selection-start-line="120" selection-start-column="43" selection-end-line="120" selection-end-column="43" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/peak_detection.py">
+    <entry file="file://$PROJECT_DIR$/test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="397">
-          <caret line="125" column="31" selection-start-line="125" selection-start-column="31" selection-end-line="125" selection-end-column="31" />
+        <state relative-caret-position="-539">
+          <caret line="56" column="35" lean-forward="true" selection-start-line="56" selection-start-column="35" selection-end-line="56" selection-end-column="35" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
+            <marker date="1561343910403" expanded="true" signature="3000:3138" ph="..." />
           </folding>
         </state>
       </provider>

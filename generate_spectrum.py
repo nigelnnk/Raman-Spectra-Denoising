@@ -75,7 +75,7 @@ def main():
     ax[1, 0].plot(x, convolved)
     ax[1, 0].set_title("Iterative Convolution Smoothing")
 
-    ds, cs = pd.get_corrected_spectrum(noise, 5, 53)
+    ds, cs = pd.corrected_diff_spectrum(noise, 5, 53)
     ax[0, 2].plot(x[:-1], ds, color='C1')
     ax[0, 2].set_title("Differentiated")
     ax[1, 2].plot(x[:-1], cs, color='C1')

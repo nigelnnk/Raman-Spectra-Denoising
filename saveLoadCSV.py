@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
+import re
+import os
 
 
 def read_spectrum(filename):
@@ -16,7 +18,20 @@ def read_spectrum(filename):
     return wa, va
 
 
-def main():
+def read_txt(filename):
+    wavenumber = []
+    value = []
+    pattern = re.compile("\W+")
+    with open(filename, "r") as f:
+        for line in f:
+            l = re.split(pattern, line)
+            w, v = l[0], l[1]
+            wavenumber.append(float(w))
+            value.append(float(v))
+    return np.array(wavenumber), np.array(value)
+
+
+def ethyl_acetate():
     wa, va = read_spectrum("data/4.csv")
     ax = plt.figure().gca()
 
@@ -35,6 +50,17 @@ def main():
     plt.grid()
     plt.show()
     # np.savez("data/spectrum_noisy.npz", wavenumbers=wa, values=va)
+
+
+def main():
+    i = 48
+    for file in os.listdir("data/"):
+        if file.endswith(".txt"):
+            print(file)
+            wa, va = read_txt("data/" + file)
+            print(va)
+            np.savez("data/" + str(i) + ".npz", wavenumbers=wa, values=va)
+            i += 1
 
 
 if __name__ == "__main__":

@@ -8,22 +8,28 @@ import peak_detection as pd
 import generate_spectrum as gs
 
 
-def main():
+def graph():
     # x = np.load("data/spectrum_clean.npz")["wavenumbers"]
     # x = np.flip(x)
     # signal = gs.populate(x, gs.LSIGNAL)
-    wavenumbers, signal = sl.read_spectrum("data/4.csv")
-    wavenumbers = np.flip(wavenumbers)
-    signal = np.flip(signal)
-    _, noise = sl.read_spectrum("data/23.csv")
-    noise = np.flip(noise)
-    x = wavenumbers
-
     # np.random.seed(3141592653)
     # rand = np.random.randn(x.size) * np.amax(signal) / 20
     # noise = rand + signal
 
-    ds, cs = pd.get_corrected_spectrum(noise, 5, 23)
+    # wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    # wavenumbers = np.flip(wavenumbers)
+    # x = wavenumbers
+    # signal = np.flip(signal)
+    # _, noise = sl.read_spectrum("data/23.csv")
+    # noise = np.flip(noise)
+
+    r = np.load("data/48.npz")
+    x = r["wavenumbers"]
+    signal = r["values"]
+    signal[signal < 0.001] = 0.001
+    noise = signal
+
+    ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
     result_diff, result_original = pd.detect_peaks(noise, cs, x[:-1])
 
     fig, ax = plt.subplots(nrows=2, ncols=2)
@@ -43,11 +49,18 @@ def main():
     ax[1, 1].remove()
     big = fig.add_subplot(g[0:, -1])
 
-    sm = sf.convo_filter_n(noise, 5, 3)
-    big.plot(x, noise, color='k', alpha=0.5, label="Noisy spectrum")
-    big.plot(x, sm, color='C1', linewidth=2, label="Smoothed spectrum")
-    big.scatter(result_original["peaks_x"], result_original["peaks_y"], color='m', marker="s", label="Peaks", zorder=10)
+    sm = sf.convo_filter_n(noise, 5, 20)
+    big.semilogy(x, noise, color='k', alpha=0.5, label="Noisy spectrum")
+    big.semilogy(x, sm, color='C1', linewidth=2, label="Smoothed spectrum")
+    big.scatter(result_original["peaks"], noise[result_original["peaks"]], color='m', marker="s", label="Peaks", zorder=10)
+
+    # TODO Look at InterSpec, Sandia Nat Lab and see how to improve from there
+    # peaks = sig.find_peaks_cwt(sm, np.arange(3, 40), min_snr=1.5)
+    # peaks, _ = sig.find_peaks(sm, distance=5, prominence=(0.5, None))
+    # big.scatter(x[peaks], sm[peaks], color='m', marker="s", label="Peaks", zorder=10)
+
     big.set_title("Original (Noisy) Spectrum")
+    big.set_yscale("log")
     big.legend()
 
     plt.show()
@@ -61,6 +74,41 @@ def generate_spectra():
     for i in range(3):
         for j in range(3):
             ax[i, j].plot(x, gs.generate_random(x))
+    plt.show()
+
+
+def main():
+    wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal = np.flip(signal)
+    _, noise = sl.read_spectrum("data/23.csv")
+    noise = np.flip(noise)
+
+    # r = np.load("data/48.npz")
+    # x = r["wavenumbers"]
+    # signal = r["values"]
+    # signal[signal < 0.001] = 0.001
+    # noise = signal
+
+    ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
+    smooth = sf.convo_filter_n(noise, 5, 20)
+    result_diff, result_original = pd.detect_peaks(smooth, cs, x[:-1])
+
+    fig, ax = plt.subplots()
+    ax.plot(x, smooth)
+    ax.plot(x, noise, alpha=0.5, label="Noise")
+
+    peaks = result_original["peaks"]
+    prom = result_original["prom"]
+    # print(x[peaks])
+    # print(prom)
+
+    ax.scatter(x[peaks], smooth[peaks], color='m', marker="s", label="Peaks", zorder=5)
+    ax.vlines(x=x[peaks], ymin=smooth[peaks]-prom, ymax=smooth[peaks], color='k', zorder=10, label="Prominence")
+    ax.set_xticks(np.arange(200, 3001, 100), minor=True)
+    ax.grid(which="both")
+    plt.legend()
     plt.show()
 
 

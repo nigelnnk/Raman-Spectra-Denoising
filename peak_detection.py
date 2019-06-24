@@ -6,7 +6,7 @@ import generate_spectrum as gs
 import smoothing_functions as sf
 
 
-def get_corrected_spectrum(spectrum, noise_window, baseline_window):
+def corrected_diff_spectrum(spectrum, noise_window, baseline_window):
     """
     Processes the given spectrum as detailed in [2] A simple background elimination method
     for Raman spectra by Baek et. al. (2009) to remove baseline errors from spectra.
@@ -21,6 +21,25 @@ def get_corrected_spectrum(spectrum, noise_window, baseline_window):
     return ds, cs
 
 
+def baseline_corrected(spectrum, wavenumbers):
+    power = 7
+    x = np.ones_like(wavenumbers)
+    for i in range(1, power + 1):
+        x = np.vstack((x, np.power(wavenumbers, i)))
+    x = np.transpose(x)
+    xtxi = np.linalg.inv(np.matmul(x.T, x))
+    multiplier = np.matmul(np.matmul(x, xtxi), x.T)
+    b_prev = spectrum
+    b = np.matmul(multiplier, spectrum)
+    new_spectrum = np.where(spectrum > b, b, spectrum)
+    while np.linalg.norm(b-b_prev)/np.linalg.norm(b_prev) > 0.01:
+        b_prev = b.copy()
+        b = np.matmul(multiplier, new_spectrum)
+        new_spectrum = np.where(new_spectrum > b, b, new_spectrum)
+
+    return new_spectrum, b
+
+
 def detect_peaks(spectrum, diff_spectrum, wavenumbers):
     """
     Peak detection as mentioned briefly in [2], but without any algorithm provided. This
@@ -33,80 +52,73 @@ def detect_peaks(spectrum, diff_spectrum, wavenumbers):
     the cutoff value of 10% of the maximum height in the graph.
 
     :param spectrum: Noisy spectrum as given by raw data
-    :param diff_spectrum: Differentiated spectrum, which can be produced by get_corrected_spectrum()
+    :param diff_spectrum: Differentiated spectrum, which can be produced by corrected_diff_spectrum()
     :param wavenumbers: Numpy array of wavenumbers that correspond to the spectrum
     :return: Two dictionaries are returned,for different display purposes:
-             Results_diff returns the zeros, troughs and peaks of the differentiated spectrum
-             Results_original returns the peaks and positions for the original spectrum
+             Results_diff returns indexes of zeros, troughs and peaks of the differentiated spectrum
+             Results_original returns the indexes of peaks and positions for the original spectrum
     """
     cutoff_diff = 0.05
-    cutoff_original = 0.1
 
     # Change in sign for array signifies a zero crossing
-    sign_change = np.asarray(np.sign(diff_spectrum[:-1]) != np.sign(diff_spectrum[1:])).nonzero()
-
-    zeros_y = diff_spectrum[sign_change]
-    zeros_x = wavenumbers[sign_change]
+    sign_change = np.asarray(np.sign(diff_spectrum[:-1]) != np.sign(diff_spectrum[1:])).nonzero()[0]
     diff = np.diff(diff_spectrum)
     # Changes in sign correspond to either peaks or troughs
-    maxima = np.asarray(np.sign(diff[:-1]) > np.sign(diff[1:])).nonzero()
-    minima = np.asarray(np.sign(diff[:-1]) < np.sign(diff[1:])).nonzero()
+    maxima = np.asarray(np.sign(diff[:-1]) > np.sign(diff[1:])).nonzero()[0]
+    minima = np.asarray(np.sign(diff[:-1]) < np.sign(diff[1:])).nonzero()[0]
 
     # Calculate (x,y) values of peaks
     h_y = diff_spectrum[maxima]
     significant_h = np.extract(h_y / np.amax(h_y) > cutoff_diff, maxima)
-    h_y = diff_spectrum[significant_h]
-    h_x = wavenumbers[significant_h]
-    highs_x = np.copy(h_x)
 
     # Calculate (x,y) values of troughs
     l_y = diff_spectrum[minima]
     significant_l = np.extract(l_y / np.amin(l_y) > cutoff_diff, minima)
-    l_y = diff_spectrum[significant_l]
-    l_x = wavenumbers[significant_l]
-    lows_x = np.copy(l_x)
 
     # Summarises results into a dictionary
-    results_diff = {"zeros_x": zeros_x,
-                    "zeros_y": zeros_y,
-                    "highs_x": highs_x,
-                    "highs_y": h_y,
-                    "lows_x": lows_x,
-                    "lows_y": l_y, }
+    results_diff = {"zeros": sign_change,
+                    "highs": significant_h,
+                    "lows": significant_l}
 
     peaks = []
     peak_widths = []
-    peak_heights = []
     smooth = sf.convo_filter_n(spectrum, 5, 20)
-    max_height = np.amax(smooth)
     # Iterating through all peaks (peaks must come first before troughs)
-    while h_x.size > 0:
-        while l_x.size > 0 and l_x[0] < h_x[0]:
-            l_x = np.delete(l_x, 0)
-
-        if l_x.size == 0:
+    for high in maxima:
+        if np.searchsorted(minima, high) == minima.size:
             break
+        low = minima[np.searchsorted(minima, high)]
 
         # Search for position of the peaks and troughs and see if they are in succession
-        h_position = np.searchsorted(zeros_x, h_x[0])
-        l_position = np.searchsorted(zeros_x, l_x[0])
+        h_position = np.searchsorted(sign_change, high)
+        l_position = np.searchsorted(sign_change, low)
 
         if h_position + 1 == l_position:
-            height = smooth[np.searchsorted(wavenumbers, zeros_x[h_position])]
-            # print("{}\t{}".format(zeros_x[h_position], height))
-            if height / max_height >= cutoff_original and l_position + 1 < zeros_x.size:
-                peaks.append(zeros_x[h_position])
-                peak_heights.append(height)
-                peak_widths.append([zeros_x[h_position - 1], zeros_x[l_position + 1]])
+            if l_position + 1 < sign_change.size:
+                peaks.append(sign_change[h_position]+1)
+                peak_widths.append([sign_change[h_position - 1], sign_change[l_position + 1]])
 
-        h_x = np.delete(h_x, 0)
-
-    # Summarises results into a dictionary
+    # Checks for prominence of peaks and ensures that they are above the mean
     peaks = np.array(peaks)
     peak_widths = np.array(peak_widths)
-    peak_heights = np.array(peak_heights)
-    results_original = {"peaks_x": peaks,
-                        "peaks_y": peak_heights,
+
+    prominence = sig.peak_prominences(spectrum, peaks)[0]
+    shift = np.nonzero(prominence == 0)[0]
+    for s in shift:
+        for i in [1, -1, 2, -2, 3, -3]:
+            index = peaks[s]+i
+            if index < 0 or index >= spectrum.size:
+                continue
+            p = sig.peak_prominences(spectrum, np.array([index]))[0]
+            if p > 0:
+                peaks[s] += i
+                break
+    prominence = sig.peak_prominences(spectrum, peaks)[0]
+    z_prominence = (prominence - np.mean(prominence))/np.std(prominence)
+    peaks = peaks[np.nonzero(z_prominence > 0)]
+
+    results_original = {"peaks": peaks,
+                        "prom": prominence,
                         "peak_widths": peak_widths}
     return results_diff, results_original
 
@@ -125,7 +137,7 @@ def test_case_2():
     """
     a = np.linspace(0, 5, 1000)
     b = ((a - 2.5) ** 3) + gs.lorentzian(a, 3, 0.2, 5) + np.random.normal(size=a.size) / 2
-    ds, cs = get_corrected_spectrum(b, 5, 53)
+    ds, cs = corrected_diff_spectrum(b, 5, 53)
     fig, ax = plt.subplots(nrows=2, ncols=2)
     ax[0, 0].plot(a, b)
     ax[0, 0].set_title("Signal")
