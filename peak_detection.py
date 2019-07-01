@@ -40,7 +40,7 @@ def baseline_corrected(spectrum, wavenumbers):
     return new_spectrum, b
 
 
-def detect_peaks(spectrum, diff_spectrum, wavenumbers):
+def detect_peaks(raw_spectrum, diff_spectrum, wavenumbers):
     """
     Peak detection as mentioned briefly in [2], but without any algorithm provided. This
     is original code, not referenced from any paper.
@@ -49,9 +49,9 @@ def detect_peaks(spectrum, diff_spectrum, wavenumbers):
     the peaks are, as peaks have a pattern of zero-maxima-zero-minima-zero. Hence, these
     are used to determine if a peak is present by analysing if each maxima has a succeeding
     minima. Additionally, the maxima and minima must be of a certain height, determined by
-    the cutoff value of 10% of the maximum height in the graph.
+    the standard deviation of noise level in the spectrum.
 
-    :param spectrum: Noisy spectrum as given by raw data
+    :param raw_spectrum: Noisy spectrum as given by raw data
     :param diff_spectrum: Differentiated spectrum, which can be produced by corrected_diff_spectrum()
     :param wavenumbers: Numpy array of wavenumbers that correspond to the spectrum
     :return: Two dictionaries are returned,for different display purposes:
@@ -82,7 +82,7 @@ def detect_peaks(spectrum, diff_spectrum, wavenumbers):
 
     peaks = []
     peak_widths = []
-    smooth = sf.convo_filter_n(spectrum, 5, 20)
+    smooth = sf.convo_filter_n(raw_spectrum, 5, 10)
     # Iterating through all peaks (peaks must come first before troughs)
     for high in maxima:
         if np.searchsorted(minima, high) == minima.size:
@@ -102,20 +102,28 @@ def detect_peaks(spectrum, diff_spectrum, wavenumbers):
     peaks = np.array(peaks)
     peak_widths = np.array(peak_widths)
 
-    prominence = sig.peak_prominences(spectrum, peaks)[0]
+    prominence = sig.peak_prominences(smooth, peaks)[0]
     shift = np.nonzero(prominence == 0)[0]
     for s in shift:
         for i in [1, -1, 2, -2, 3, -3]:
             index = peaks[s]+i
-            if index < 0 or index >= spectrum.size:
+            if index < 0 or index >= smooth.size:
                 continue
-            p = sig.peak_prominences(spectrum, np.array([index]))[0]
+            p = sig.peak_prominences(smooth, np.array([index]))[0]
             if p > 0:
                 peaks[s] += i
                 break
-    prominence = sig.peak_prominences(spectrum, peaks)[0]
+    prominence = sig.peak_prominences(smooth, peaks)[0]
     z_prominence = (prominence - np.mean(prominence))/np.std(prominence)
-    peaks = peaks[np.nonzero(z_prominence > 0)]
+
+    # Peaks are compared to the noise level of the spectrum
+    noise_only = sf.get_noise(raw_spectrum)
+    noise_mean = np.mean(noise_only)
+    noise_stdd = np.std(noise_only)
+    z = (prominence - noise_mean)/noise_stdd
+
+    peaks = peaks[np.nonzero(z > 2)]
+    prominence = sig.peak_prominences(smooth, peaks)[0]
 
     results_original = {"peaks": peaks,
                         "prom": prominence,

@@ -106,7 +106,6 @@ def rms_error(original, modified):
     return np.sqrt(np.mean(np.square(original-modified)))
 
 
-@njit
 def get_noise(spectrum):
     """
     To determine noise in the spectrum, peaks must be removed. This can be done by taking

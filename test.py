@@ -9,12 +9,12 @@ import generate_spectrum as gs
 
 
 def graph():
-    # x = np.load("data/spectrum_clean.npz")["wavenumbers"]
-    # x = np.flip(x)
+    x = np.load("data/spectrum_clean.npz")["wavenumbers"]
+    x = np.flip(x)
+    signal, correct_peaks = gs.generate_random(x)
     # signal = gs.populate(x, gs.LSIGNAL)
-    # np.random.seed(3141592653)
-    # rand = np.random.randn(x.size) * np.amax(signal) / 20
-    # noise = rand + signal
+    rand = np.random.randn(x.size) * np.amax(signal) / 20
+    noise = rand + signal
 
     # wavenumbers, signal = sl.read_spectrum("data/4.csv")
     # wavenumbers = np.flip(wavenumbers)
@@ -23,11 +23,11 @@ def graph():
     # _, noise = sl.read_spectrum("data/23.csv")
     # noise = np.flip(noise)
 
-    r = np.load("data/48.npz")
-    x = r["wavenumbers"]
-    signal = r["values"]
-    signal[signal < 0.001] = 0.001
-    noise = signal
+    # r = np.load("data/48.npz")
+    # x = r["wavenumbers"]
+    # signal = r["values"]
+    # signal[signal < 0.001] = 0.001
+    # noise = signal
 
     ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
     result_diff, result_original = pd.detect_peaks(noise, cs, x[:-1])
@@ -85,15 +85,19 @@ def main():
     _, noise = sl.read_spectrum("data/23.csv")
     noise = np.flip(noise)
 
+    # signal, correct_peaks = gs.generate_random(x)
+    # rand = np.random.randn(x.size) * np.amax(signal) / 20
+    # noise = signal + rand
+
     # r = np.load("data/48.npz")
-    # x = r["wavenumbers"]
+    # x = r["wavenumbers"] * 0.3692
     # signal = r["values"]
-    # signal[signal < 0.001] = 0.001
+    # signal[signal < 0.01] = 0.01
     # noise = signal
 
     ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
-    smooth = sf.convo_filter_n(noise, 5, 20)
-    result_diff, result_original = pd.detect_peaks(smooth, cs, x[:-1])
+    smooth = sf.convo_filter_n(noise, 5, 10)
+    result_diff, result_original = pd.detect_peaks(noise, cs, x[:-1])
 
     fig, ax = plt.subplots()
     ax.plot(x, smooth)
@@ -101,12 +105,12 @@ def main():
 
     peaks = result_original["peaks"]
     prom = result_original["prom"]
-    # print(x[peaks])
-    # print(prom)
+    print(x[peaks])
+    print(prom)
 
     ax.scatter(x[peaks], smooth[peaks], color='m', marker="s", label="Peaks", zorder=5)
     ax.vlines(x=x[peaks], ymin=smooth[peaks]-prom, ymax=smooth[peaks], color='k', zorder=10, label="Prominence")
-    ax.set_xticks(np.arange(200, 3001, 100), minor=True)
+    ax.set_xticks(np.arange(round(x[0], -2), x[-1]+1, 100), minor=True)
     ax.grid(which="both")
     plt.legend()
     plt.show()

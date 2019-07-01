@@ -40,13 +40,15 @@ def populate(x, list_of_signals):
 def generate_random(wavenumbers):
     n = random.randint(2, 7)
     spectrum = np.zeros(wavenumbers.size)
+    peaks = []
     for i in range(n):
         p = random.choice(wavenumbers)
         w = random.randint(5, 30)
         h = random.randint(1, 5)
-        print("{}\t{}\t{}".format(p, w, h))
+        # print("{}\t{}\t{}".format(p, w, h))
+        peaks.append((p, w, h))
         spectrum += lorentzian(wavenumbers, p, w, h)
-    return spectrum
+    return spectrum, peaks
 
 
 def main():
