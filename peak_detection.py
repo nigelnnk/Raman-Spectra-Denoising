@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 from scipy import signal as sig
 import generate_spectrum as gs
 import smoothing_functions as sf
+import saveLoadCSV as sl
 
 
-def corrected_diff_spectrum(spectrum, noise_window, baseline_window):
+def corrected_diff_spectrum(spectrum, noise_window=5, baseline_window=23):
     """
     Processes the given spectrum as detailed in [2] A simple background elimination method
     for Raman spectra by Baek et. al. (2009) to remove baseline errors from spectra.
@@ -21,8 +22,21 @@ def corrected_diff_spectrum(spectrum, noise_window, baseline_window):
     return ds, cs
 
 
-def baseline_corrected(spectrum, wavenumbers):
-    power = 7
+def poly_baseline_corrected(spectrum, wavenumbers, power=7):
+    """
+    This is baseline correction as explained in Baseline correction by improved iterative
+    polynomial fitting with automatic threshold by Gan et. al. (2006).
+
+    It attempts to fit the baseline via an "averaging" of points, and excluding data above
+    this average. This is repeated until a stopping criterion is reached.
+
+    :param spectrum: Numpy array containing spectra data
+    :param wavenumbers: Numpy array of wavenumbers in spectra
+    :param power: Power of polynomial that is used to fit baseline. Default is 7.
+    :return:
+    """
+
+    # Iterating through baseline = X (X.T X)^-1 X.T y
     x = np.ones_like(wavenumbers)
     for i in range(1, power + 1):
         x = np.vstack((x, np.power(wavenumbers, i)))
@@ -32,15 +46,16 @@ def baseline_corrected(spectrum, wavenumbers):
     b_prev = spectrum
     b = np.matmul(multiplier, spectrum)
     new_spectrum = np.where(spectrum > b, b, spectrum)
+
+    # Stopping criterion is not defined well in paper, so I guessed what it's supposed to be
     while np.linalg.norm(b-b_prev)/np.linalg.norm(b_prev) > 0.01:
         b_prev = b.copy()
         b = np.matmul(multiplier, new_spectrum)
         new_spectrum = np.where(new_spectrum > b, b, new_spectrum)
-
     return new_spectrum, b
 
 
-def detect_peaks(raw_spectrum, diff_spectrum, wavenumbers):
+def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
     """
     Peak detection as mentioned briefly in [2], but without any algorithm provided. This
     is original code, not referenced from any paper.
@@ -53,7 +68,6 @@ def detect_peaks(raw_spectrum, diff_spectrum, wavenumbers):
 
     :param raw_spectrum: Noisy spectrum as given by raw data
     :param diff_spectrum: Differentiated spectrum, which can be produced by corrected_diff_spectrum()
-    :param wavenumbers: Numpy array of wavenumbers that correspond to the spectrum
     :return: Two dictionaries are returned,for different display purposes:
              Results_diff returns indexes of zeros, troughs and peaks of the differentiated spectrum
              Results_original returns the indexes of peaks and positions for the original spectrum
@@ -114,12 +128,12 @@ def detect_peaks(raw_spectrum, diff_spectrum, wavenumbers):
                 peaks[s] += i
                 break
     prominence = sig.peak_prominences(smooth, peaks)[0]
-    z_prominence = (prominence - np.mean(prominence))/np.std(prominence)
 
     # Peaks are compared to the noise level of the spectrum
-    noise_only = sf.get_noise(raw_spectrum)
-    noise_mean = np.mean(noise_only)
-    noise_stdd = np.std(noise_only)
+    if noise_stdd == -1 and noise_mean == -1:
+        noise_only = sf.get_noise(raw_spectrum)
+        noise_mean = np.mean(noise_only)
+        noise_stdd = np.std(noise_only)
     z = (prominence - noise_mean)/noise_stdd
 
     peaks = peaks[np.nonzero(z > 2)]
@@ -127,7 +141,7 @@ def detect_peaks(raw_spectrum, diff_spectrum, wavenumbers):
 
     results_original = {"peaks": peaks,
                         "prom": prominence,
-                        "peak_widths": peak_widths}
+                        "widths": peak_widths}
     return results_diff, results_original
 
 
@@ -160,5 +174,49 @@ def test_case_2():
     plt.show()
 
 
+def test_case_3():
+    """
+    This is a test case for Baseline correction by improved iterative polynomial fitting with
+    automatic threshold by Gan et. al. (2006).
+
+    It showcases the limitations of a polynomial fitting of the baseline, and how sometimes
+    certain powers will result in weird results. This makes use of poly_corrected_baseline(),
+    which is not used in future versions of the code.
+    """
+    wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal = np.flip(signal)
+    _, noise = sl.read_spectrum("data/23.csv")
+    noise = np.flip(noise)
+
+    new_spec, b = poly_baseline_corrected(noise, wavenumbers, 9)
+    new_noise = noise - b
+    ds, cs = corrected_diff_spectrum(new_noise, 5, 23)
+    smooth = sf.convo_filter_n(new_noise, 5, 10)
+    result_diff, result_original = detect_peaks(new_noise, cs)
+
+    fig, ax = plt.subplots(ncols=2)
+    ax[0].plot(wavenumbers, noise)
+    ax[0].plot(wavenumbers, b, alpha=0.5)
+    # ax[0].plot(wavenumbers, sf.convo_filter_n(noise, 101, 30))
+    ax[0].plot(wavenumbers, np.zeros_like(wavenumbers), alpha=0.5, color='k')
+
+    ax[1].plot(x, smooth)
+    ax[1].plot(x, new_noise, alpha=0.5, label="Noise")
+
+    peaks = result_original["peaks"]
+    prom = result_original["prom"]
+    print(x[peaks])
+    print(prom)
+
+    ax[1].scatter(x[peaks], smooth[peaks], color='m', marker="s", label="Peaks", zorder=5)
+    ax[1].vlines(x=x[peaks], ymin=smooth[peaks] - prom, ymax=smooth[peaks], color='k', zorder=10, label="Prominence")
+    ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
+    ax[1].grid(which="both")
+    plt.legend()
+    plt.show()
+
+
 if __name__ == "__main__":
-    test_case_2()
+    test_case_3()

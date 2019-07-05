@@ -97,7 +97,7 @@ def main():
 
     ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
     smooth = sf.convo_filter_n(noise, 5, 10)
-    result_diff, result_original = pd.detect_peaks(noise, cs, x[:-1])
+    result_diff, result_original = pd.detect_peaks(noise, cs)
 
     fig, ax = plt.subplots()
     ax.plot(x, smooth)
