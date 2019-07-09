@@ -2,6 +2,8 @@ import numpy as np
 from numba import *
 import matplotlib.pyplot as plt
 from scipy import signal as sig
+from scipy import sparse
+from scipy.sparse.linalg import splu
 import generate_spectrum as gs
 import smoothing_functions as sf
 import saveLoadCSV as sl
@@ -53,6 +55,19 @@ def poly_baseline_corrected(spectrum, wavenumbers, power=7):
         b = np.matmul(multiplier, new_spectrum)
         new_spectrum = np.where(new_spectrum > b, b, new_spectrum)
     return new_spectrum, b
+
+
+def als_baseline(spectrum, lmbd, p=0.05):
+    N = spectrum.size
+    diagonals = np.array([1, -2, 1])
+    D = sparse.diags(diagonals, np.arange(3), (N-2, N), format='csc')
+    diff_matrix = D.T.dot(D)
+    weights = np.ones_like(spectrum)
+    for i in range(10):
+        W = sparse.diags(weights, 0, (N, N))
+        new_baseline = splu(W + lmbd * diff_matrix).solve(W.dot(spectrum))
+        weights = np.where(spectrum > new_baseline, p, 1 - p)
+    return new_baseline, weights
 
 
 def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
@@ -147,76 +162,3 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
 
 def normalise(y):
     return y / np.max(y)
-
-
-def test_case_2():
-    """
-    This is a test case for [2] A simple background elimination method for Raman spectra.
-
-    It showcases how it is a useful tool when the spectrum baseline changes drastically.
-    However, for most Raman spectra, the baseline changes slowly. Nevertheless, this is
-    still implemented because of its benefits in clearing up the differentiated spectra.
-    """
-    a = np.linspace(0, 5, 1000)
-    b = ((a - 2.5) ** 3) + gs.lorentzian(a, 3, 0.2, 5) + np.random.normal(size=a.size) / 2
-    ds, cs = corrected_diff_spectrum(b, 5, 53)
-    fig, ax = plt.subplots(nrows=2, ncols=2)
-    ax[0, 0].plot(a, b)
-    ax[0, 0].set_title("Signal")
-    ax[0, 1].plot(a, sf.convo_filter_n(b, 5, 20))
-    ax[0, 1].set_title("SG smoothed")
-    ax[1, 0].plot(a[:-1], ds, c='b', label="differentiated spectrum")
-    ax[1, 0].plot(a[:-1], np.diff(((a - 2.5) ** 3)), c='r', label="differentiated baseline")
-    ax[1, 0].set_title("Differentiated")
-    ax[1, 0].legend()
-    ax[1, 1].plot(a[:-1], cs)
-    ax[1, 1].set_title("Corrected")
-    plt.show()
-
-
-def test_case_3():
-    """
-    This is a test case for Baseline correction by improved iterative polynomial fitting with
-    automatic threshold by Gan et. al. (2006).
-
-    It showcases the limitations of a polynomial fitting of the baseline, and how sometimes
-    certain powers will result in weird results. This makes use of poly_corrected_baseline(),
-    which is not used in future versions of the code.
-    """
-    wavenumbers, signal = sl.read_spectrum("data/4.csv")
-    wavenumbers = np.flip(wavenumbers)
-    x = wavenumbers
-    signal = np.flip(signal)
-    _, noise = sl.read_spectrum("data/23.csv")
-    noise = np.flip(noise)
-
-    new_spec, b = poly_baseline_corrected(noise, wavenumbers, 9)
-    new_noise = noise - b
-    ds, cs = corrected_diff_spectrum(new_noise, 5, 23)
-    smooth = sf.convo_filter_n(new_noise, 5, 10)
-    result_diff, result_original = detect_peaks(new_noise, cs)
-
-    fig, ax = plt.subplots(ncols=2)
-    ax[0].plot(wavenumbers, noise)
-    ax[0].plot(wavenumbers, b, alpha=0.5)
-    # ax[0].plot(wavenumbers, sf.convo_filter_n(noise, 101, 30))
-    ax[0].plot(wavenumbers, np.zeros_like(wavenumbers), alpha=0.5, color='k')
-
-    ax[1].plot(x, smooth)
-    ax[1].plot(x, new_noise, alpha=0.5, label="Noise")
-
-    peaks = result_original["peaks"]
-    prom = result_original["prom"]
-    print(x[peaks])
-    print(prom)
-
-    ax[1].scatter(x[peaks], smooth[peaks], color='m', marker="s", label="Peaks", zorder=5)
-    ax[1].vlines(x=x[peaks], ymin=smooth[peaks] - prom, ymax=smooth[peaks], color='k', zorder=10, label="Prominence")
-    ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
-    ax[1].grid(which="both")
-    plt.legend()
-    plt.show()
-
-
-if __name__ == "__main__":
-    test_case_3()
