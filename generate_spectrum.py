@@ -38,16 +38,21 @@ def populate(x, list_of_signals):
 
 
 def generate_random(wavenumbers):
+    wave = wavenumbers.copy()
     n = random.randint(2, 7)
-    spectrum = np.zeros(wavenumbers.size)
+    spectrum = np.zeros(wave.size)
+    space = np.mean(np.diff(wave))
     peaks = []
     for i in range(n):
-        p = random.choice(wavenumbers)
+        p = random.randint(0, wave.size-1)
         w = random.randint(5, 30)
         h = random.randint(1, 5)
         # print("{}\t{}\t{}".format(p, w, h))
-        peaks.append((p, w, h))
-        spectrum += lorentzian(wavenumbers, p, w, h)
+        peaks.append((wave[p], w, h))
+        spectrum += lorentzian(wavenumbers, wave[p], w, h)
+        remove = wave[np.arange(p-3, p+3)]
+        wave = np.setdiff1d(wave, remove)
+    peaks.sort(key=lambda x: x[0])
     return spectrum, peaks
 
 
