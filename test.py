@@ -77,7 +77,7 @@ def generate_spectra():
     plt.show()
 
 
-def main():
+def test_case_1():
     wavenumbers, signal = sl.read_spectrum("data/4.csv")
     wavenumbers = np.flip(wavenumbers)
     x = wavenumbers
@@ -116,5 +116,114 @@ def main():
     plt.show()
 
 
+def test_case_2():
+    """
+    This is a test case for [2] A simple background elimination method for Raman spectra.
+
+    It showcases how it is a useful tool when the spectrum baseline changes drastically.
+    However, for most Raman spectra, the baseline changes slowly. Nevertheless, this is
+    still implemented because of its benefits in clearing up the differentiated spectra.
+    """
+    a = np.linspace(0, 5, 1000)
+    b = ((a - 2.5) ** 3) + gs.lorentzian(a, 3, 0.2, 5) + np.random.normal(size=a.size) / 2
+    ds, cs = pd.corrected_diff_spectrum(b, 5, 53)
+    fig, ax = plt.subplots(nrows=2, ncols=2)
+    ax[0, 0].plot(a, b)
+    ax[0, 0].set_title("Signal")
+    ax[0, 1].plot(a, sf.convo_filter_n(b, 5, 20))
+    ax[0, 1].set_title("SG smoothed")
+    ax[1, 0].plot(a[:-1], ds, c='b', label="differentiated spectrum")
+    ax[1, 0].plot(a[:-1], np.diff(((a - 2.5) ** 3)), c='r', label="differentiated baseline")
+    ax[1, 0].set_title("Differentiated")
+    ax[1, 0].legend()
+    ax[1, 1].plot(a[:-1], cs)
+    ax[1, 1].set_title("Corrected")
+    plt.show()
+
+
+def test_case_3():
+    """
+    This is a test case for Baseline correction by improved iterative polynomial fitting with
+    automatic threshold by Gan et. al. (2006).
+
+    It showcases the limitations of a polynomial fitting of the baseline, and how sometimes
+    certain powers will result in weird results. This makes use of poly_corrected_baseline(),
+    which is not used in future versions of the code.
+    """
+    wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal = np.flip(signal)
+    _, noise = sl.read_spectrum("data/23.csv")
+    noise = np.flip(noise)
+
+    new_spec, b = pd.poly_baseline_corrected(noise, wavenumbers, 9)
+    new_noise = noise - b
+    ds, cs = pd.corrected_diff_spectrum(new_noise, 5, 23)
+    smooth = sf.convo_filter_n(new_noise, 5, 10)
+    result_diff, result_original = pd.detect_peaks(new_noise, cs)
+
+    fig, ax = plt.subplots(ncols=2)
+    ax[0].plot(wavenumbers, noise)
+    ax[0].plot(wavenumbers, b, alpha=0.5)
+    # ax[0].plot(wavenumbers, sf.convo_filter_n(noise, 101, 30))
+    ax[0].plot(wavenumbers, np.zeros_like(wavenumbers), alpha=0.5, color='k')
+
+    ax[1].plot(x, smooth)
+    ax[1].plot(x, new_noise, alpha=0.5, label="Noise")
+
+    peaks = result_original["peaks"]
+    prom = result_original["prom"]
+    print(x[peaks])
+    print(prom)
+
+    ax[1].scatter(x[peaks], smooth[peaks], color='m', marker="s", label="Peaks", zorder=5)
+    ax[1].vlines(x=x[peaks], ymin=smooth[peaks] - prom, ymax=smooth[peaks], color='k', zorder=10, label="Prominence")
+    ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
+    ax[1].grid(which="both")
+    plt.legend()
+    plt.show()
+
+
+def test_case_4():
+    """
+
+    """
+    wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal = np.flip(signal)
+    _, noise = sl.read_spectrum("data/23.csv")
+    noise = np.flip(noise)
+
+    b, weights = pd.als_baseline(sf.convo_filter_n(noise), 1000000)
+    # TODO how to automate finding of lambda?
+    new_noise = noise - b
+    ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
+    smooth = sf.convo_filter_n(new_noise)
+    result_diff, result_original = pd.detect_peaks(noise, cs)
+
+    fig, ax = plt.subplots(ncols=2)
+    ax[0].plot(wavenumbers, noise)
+    ax[0].plot(wavenumbers, b)
+    ax[0].scatter(wavenumbers, weights, s=0.2, alpha=0.7, color='r', zorder=10)
+    ax[0].plot(wavenumbers, np.zeros_like(wavenumbers), alpha=0.5, color='k')
+
+    ax[1].plot(x, smooth)
+    ax[1].plot(x, new_noise, alpha=0.5, label="Noise")
+
+    peaks = result_original["peaks"]
+    prom = sig.peak_prominences(smooth, peaks)[0]
+    print(x[peaks])
+    print(prom)
+
+    ax[1].scatter(x[peaks], smooth[peaks], color='m', marker="s", label="Peaks", zorder=5)
+    ax[1].vlines(x=x[peaks], ymin=smooth[peaks] - prom, ymax=smooth[peaks], color='k', zorder=10, label="Prominence")
+    ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
+    ax[1].grid(which="both")
+    plt.legend()
+    plt.show()
+
+
 if __name__ == "__main__":
-    main()
+    test_case_4()

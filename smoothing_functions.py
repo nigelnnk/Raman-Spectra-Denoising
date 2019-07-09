@@ -34,7 +34,7 @@ def SGfiltern(y, n):
 
 
 # @njit
-def convo_filter_n(spectrum, window_size, n):
+def convo_filter_n(spectrum, window_size=5, n=10):
     """
     Applies the convolution-based low-pass filter n times based on a window size.
     Filter is based on the Hanning window. Boundary effects are still present, but
