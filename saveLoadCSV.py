@@ -52,6 +52,27 @@ def ethyl_acetate():
     # np.savez("data/spectrum_noisy.npz", wavenumbers=wa, values=va)
 
 
+def load_nuclear(filename):
+    r = np.load(filename)
+    x = r["wavenumbers"] * 0.3692
+    signal = np.trim_zeros(r["values"], trim='f')
+    x = x[x.size - signal.size+5:]
+    signal = signal[5:]
+    signal[signal < 0.01] = 0.01
+    noise = signal
+    return x, noise, signal
+
+
+def load_raman():
+    wavenumbers, signal = read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal = np.flip(signal)
+    _, noise = read_spectrum("data/23.csv")
+    noise = np.flip(noise)
+    return x, noise, signal
+
+
 def main():
     i = 48
     for file in os.listdir("data/"):
