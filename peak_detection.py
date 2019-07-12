@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import signal as sig
 from scipy import sparse
 from scipy.sparse.linalg import splu
-import generate_spectrum as gs
 import smoothing_functions as sf
-import saveLoadCSV as sl
 
 
 def corrected_diff_spectrum(spectrum, noise_window=5, baseline_window=23):
@@ -35,7 +33,7 @@ def poly_baseline_corrected(spectrum, wavenumbers, power=7):
     :param spectrum: Numpy array containing spectra data
     :param wavenumbers: Numpy array of wavenumbers in spectra
     :param power: Power of polynomial that is used to fit baseline. Default is 7.
-    :return:
+    :return: baseline of spectrum
     """
 
     # Iterating through baseline = X (X.T X)^-1 X.T y
@@ -54,20 +52,61 @@ def poly_baseline_corrected(spectrum, wavenumbers, power=7):
         b_prev = b.copy()
         b = np.matmul(multiplier, new_spectrum)
         new_spectrum = np.where(new_spectrum > b, b, new_spectrum)
-    return new_spectrum, b
+    return b
 
 
 def als_baseline(spectrum, lmbd, p=0.05):
+    """
+    This baseline correction method is taken from Eiler and Boelen (2005) Baseline Correction
+    with Asymmetric Least Squares Smoothing.
+
+    It minimises the least squares fitting of the baseline and spectrum while also adjusting
+    the weights of each point in the spectrum to tune out the peaks.
+    :param spectrum: Spectrum to be processed to generate baseline
+    :param lmbd: As defined in algorithm. Raised to the power of 10.
+    :param p: Weight given to points that are determined to be peaks
+    :return: baseline of spectrum and weights of each individual points
+    """
+    if lmbd < 10:
+        lmbd = 10**lmbd
     N = spectrum.size
     diagonals = np.array([1, -2, 1])
     D = sparse.diags(diagonals, np.arange(3), (N-2, N), format='csc')
     diff_matrix = D.T.dot(D)
     weights = np.ones_like(spectrum)
     for i in range(10):
-        W = sparse.diags(weights, 0, (N, N))
+        W = sparse.diags(weights, 0, (N, N), format='csc')
         new_baseline = splu(W + lmbd * diff_matrix).solve(W.dot(spectrum))
         weights = np.where(spectrum > new_baseline, p, 1 - p)
     return new_baseline, weights
+
+
+def auto_als_baseline(spectrum, p=0.05):
+    """
+    This is the automated form of als_baseline, to determine which is the best lambda value.
+    This is original work. Calculated by finding spectrum that has most number of points
+    counted as baseline. Usually lambda is determined by human intervention.
+
+    An algorithm for gradient descent could possibly give better lambda values more quickly
+    but I am unsure how to implement it.
+    :param spectrum: Spectrum to be processed to generate baseline
+    :param p: Weight given to points that are determined to be peaks
+    :return: als_baseline with best lambda value
+    """
+    rms = []
+    for L in range(4, 17):
+        b, w = als_baseline(spectrum, L/2, p)
+        rms.append(np.count_nonzero(w == p))
+    m = min(rms)
+    L = rms.index(m)/2 + 2
+
+    # print(f"Lambda = {L}")
+    # print(rms)
+
+    # TODO automatic calculation of best p value?
+    # Perhaps use the (spectrum - baseline) distribution?? Ensures that the correct p is
+    # chosen.
+    return als_baseline(spectrum, L, p)
 
 
 def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
@@ -83,11 +122,17 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
 
     :param raw_spectrum: Noisy spectrum as given by raw data
     :param diff_spectrum: Differentiated spectrum, which can be produced by corrected_diff_spectrum()
+    :param noise_mean: Noise mean used to filter peaks. Can be auto calculated.
+    :param noise_stdd: Noise std dev used to filter peaks. Can be auto calculated.
     :return: Two dictionaries are returned,for different display purposes:
              Results_diff returns indexes of zeros, troughs and peaks of the differentiated spectrum
              Results_original returns the indexes of peaks and positions for the original spectrum
     """
     cutoff_diff = 0.05
+
+    # ALS baseline correction is not chosen because the lambda adjustment might result in
+    # negative signals, which is not ideal for peak detection.
+    # diff_spectrum = np.diff(raw_spectrum - auto_als_baseline(raw_spectrum)[0])
 
     # Change in sign for array signifies a zero crossing
     sign_change = np.asarray(np.sign(diff_spectrum[:-1]) != np.sign(diff_spectrum[1:])).nonzero()[0]
@@ -98,11 +143,11 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
 
     # Calculate (x,y) values of peaks
     h_y = diff_spectrum[maxima]
-    significant_h = np.extract(h_y / np.amax(h_y) > cutoff_diff, maxima)
+    significant_h = maxima[h_y / np.amax(h_y) > cutoff_diff]
 
     # Calculate (x,y) values of troughs
     l_y = diff_spectrum[minima]
-    significant_l = np.extract(l_y / np.amin(l_y) > cutoff_diff, minima)
+    significant_l = minima[l_y / np.amin(l_y) > cutoff_diff]
 
     # Summarises results into a dictionary
     results_diff = {"zeros": sign_change,
@@ -150,9 +195,17 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
         noise_mean = np.mean(noise_only)
         noise_stdd = np.std(noise_only)
     z = (prominence - noise_mean)/noise_stdd
+    # print(peaks)
+    # print(z > 2)
 
     peaks = peaks[np.nonzero(z > 2)]
     prominence = sig.peak_prominences(smooth, peaks)[0]
+
+    # optional filter based on prominence and actual signal level
+    # prom_filter = np.nonzero(prominence / raw_spectrum[peaks] > 0.5)
+    # peaks = peaks[prom_filter]
+    # prominence = prominence[prom_filter]
+    # peak_widths = peak_widths[prom_filter]
 
     results_original = {"peaks": peaks,
                         "prom": prominence,

@@ -33,7 +33,6 @@ def SGfiltern(y, n):
     return ans
 
 
-# @njit
 def convo_filter_n(spectrum, window_size=5, n=10):
     """
     Applies the convolution-based low-pass filter n times based on a window size.
@@ -53,7 +52,6 @@ def convo_filter_n(spectrum, window_size=5, n=10):
     return ans
 
 
-# @njit
 def iter_convo_filter(spectrum, window_size):
     """
     Smooths spectrum as detailed in [1] Fully Automated High-Performance Signal-to-Noise
@@ -81,7 +79,6 @@ def iter_convo_filter(spectrum, window_size):
     return ans
 
 
-@njit
 def chi_sq(original, modified):
     """
     This is a modified chi squared parameter, as the sum is divided by the noise level.
@@ -126,10 +123,3 @@ def get_noise(spectrum):
     z_score = np.abs(spectrum-mean)/stddev
     new = np.extract(z_score < 3, spectrum)
     return new
-
-
-def main():
-    pass
-
-if __name__ == "__main__":
-    main()
