@@ -37,14 +37,16 @@ def populate(x, list_of_signals):
     return i
 
 
-def generate_random(wavenumbers):
+def generate_random(wavenumbers, seed=-1):
+    if seed != -1:
+        np.random.seed(seed)
     wave = wavenumbers.copy()
     n = random.randint(2, 7)
     spectrum = np.zeros(wave.size)
     space = np.mean(np.diff(wave))
     peaks = []
     for i in range(n):
-        p = random.randint(0, wave.size-1)
+        p = random.randint(10, wave.size-10)
         w = random.randint(5, 30)
         h = random.randint(1, 5)
         # print("{}\t{}\t{}".format(p, w, h))
@@ -55,49 +57,3 @@ def generate_random(wavenumbers):
     peaks.sort(key=lambda x: x[0])
     return spectrum, peaks
 
-
-def main():
-    """
-    For debugging purposes, to print out certain functions and see how good they are
-    :return: A plot of the signal, noisy spectrum, and some functions
-    """
-    x = np.load("data/spectrum_clean.npz")["wavenumbers"]
-    x = np.flip(x)
-    signal = populate(x, LSIGNAL)
-    # wavenumbers, signal = sl.read_spectrum("data/4.csv")
-    # _, noise = sl.read_spectrum("data/23.csv")
-    # x = wavenumbers
-
-    np.random.seed(3141592653)
-    rand = np.random.randn(x.size) * np.amax(signal) / 20
-    # print("rrrrr\t{}\t{}".format(np.mean(rand), np.std(rand)))
-    noise = rand + signal
-
-    fig, ax = plt.subplots(nrows=2, ncols=3)
-    ax[0, 0].plot(x, signal)
-    ax[0, 0].set_title("Signal")
-    ax[0, 1].plot(x, noise)
-    ax[0, 1].set_title("Noisy Spectrum")
-    convolved = sf.iter_convo_filter(noise, 5)
-    ax[1, 0].plot(x, convolved)
-    ax[1, 0].set_title("Iterative Convolution Smoothing")
-
-    ds, cs = pd.corrected_diff_spectrum(noise, 5, 53)
-    ax[0, 2].plot(x[:-1], ds, color='C1')
-    ax[0, 2].set_title("Differentiated")
-    ax[1, 2].plot(x[:-1], cs, color='C1')
-    ax[1, 2].set_title("Corrected")
-
-    # new_x, new_y = pd.detect_peaks(cs, x[:-1])
-    # print(new_x)
-    # print(new_y)
-    # ax[1, 1].plot(new_x, new_y, color='b', marker="x", markersize=6)
-
-    ax[1, 1].plot(x, sf.convo_filter_n(noise, 5, 20))
-    ax[1, 1].set_title("Convolution filter (20)")
-
-    plt.show()
-
-
-if __name__ == "__main__":
-    main()
