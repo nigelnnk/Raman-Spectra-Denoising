@@ -67,7 +67,7 @@ def als_baseline(spectrum, lmbd, p=0.05):
     :param p: Weight given to points that are determined to be peaks
     :return: baseline of spectrum and weights of each individual points
     """
-    if lmbd < 10:
+    if lmbd < 15:
         lmbd = 10**lmbd
     N = spectrum.size
     diagonals = np.array([1, -2, 1])
@@ -90,18 +90,19 @@ def auto_als_baseline(spectrum, p=0.05):
     An algorithm for gradient descent could possibly give better lambda values more quickly
     but I am unsure how to implement it.
     :param spectrum: Spectrum to be processed to generate baseline
+    :param spectrum: Spectrum to be processed to generate baseline
     :param p: Weight given to points that are determined to be peaks
     :return: als_baseline with best lambda value
     """
     rms = []
-    for L in range(4, 17):
+    for L in range(6, 17):
         b, w = als_baseline(spectrum, L/2, p)
-        rms.append(np.count_nonzero(w == p))
+        rms.append(np.count_nonzero(w == p) * np.sum(np.square(np.diff(b)))**0.5)
     m = min(rms)
-    L = rms.index(m)/2 + 2
+    L = rms.index(m)/2 + 3
 
-    # print(f"Lambda = {L}")
-    # print(rms)
+    print(f"Lambda = {L}")
+    print(rms)
 
     # TODO automatic calculation of best p value?
     # Perhaps use the (spectrum - baseline) distribution?? Ensures that the correct p is
@@ -109,7 +110,7 @@ def auto_als_baseline(spectrum, p=0.05):
     return als_baseline(spectrum, L, p)
 
 
-def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
+def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="raman"):
     """
     Peak detection as mentioned briefly in [2], but without any algorithm provided. This
     is original code, not referenced from any paper.
@@ -191,14 +192,30 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1):
 
     # Peaks are compared to the noise level of the spectrum
     if noise_stdd == -1 and noise_mean == -1:
-        noise_only = sf.get_noise(raw_spectrum)
-        noise_mean = np.mean(noise_only)
-        noise_stdd = np.std(noise_only)
-    z = (prominence - noise_mean)/noise_stdd
+        if t == "raman":
+            w, noise_mean, noise_stdd = sf.get_moving_noise(raw_spectrum)
+            z = []
+            for i in range(peaks.size):
+                temp = raw_spectrum.size % w
+                if peaks[i] // w <= temp-1:
+                    ind = peaks[i] // (w+1)
+                else:
+                    ind = peaks[i] // w
+                # print(f"{ind}\t{peaks[i]}\t{w}")
+                z.append((prominence[i]-noise_mean[ind])/noise_stdd[ind])
+            z = np.array(z)
+        elif t == "gamma":
+            noise_only = sf.get_noise(raw_spectrum)
+            noise_mean = np.mean(noise_only)
+            noise_stdd = np.std(noise_only)
+            z = (prominence - noise_mean) / noise_stdd
+    else:
+        z = (prominence - noise_mean)/noise_stdd
+    # z = (raw_spectrum[peaks] - noise_mean)/noise_stdd
     # print(peaks)
-    # print(z > 2)
+    # print(z)
 
-    peaks = peaks[np.nonzero(z > 2)]
+    peaks = peaks[np.nonzero(z > 3)]
     prominence = sig.peak_prominences(smooth, peaks)[0]
 
     # optional filter based on prominence and actual signal level

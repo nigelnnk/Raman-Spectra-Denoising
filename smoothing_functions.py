@@ -87,7 +87,9 @@ def chi_sq(original, modified):
     :param modified: Spectrum being compared, "processed" spectra
     :return: Chi Squared value
     """
-    n = get_noise(original)
+    d = np.diff(original)
+    z = (d - np.mean(d))/np.std(d)
+    n = d[z < 3]
     stddev = np.std(n) ** 2
     return np.sum(np.square(original-modified) / stddev)
 
@@ -101,6 +103,46 @@ def rms_error(original, modified):
     :return: RMS error value
     """
     return np.sqrt(np.mean(np.square(original-modified)))
+
+
+def get_moving_noise(spectrum):
+
+    spectrum = np.pad(np.diff(spectrum), (0, 1), 'edge')
+    zero_std = True
+    window = int(max(spectrum.size / 20, 200))
+    while zero_std:
+        zero_std = False
+        n = spectrum.size//window
+        window = spectrum.size // n
+        bins = np.array_split(spectrum, n)
+        bins_average = []
+        bins_stddev = []
+        for b in bins:
+            bins_average.append(np.mean(b))
+            s = np.std(b)
+            if s == 0:
+                zero_std = True
+                window *= 2
+                break
+            bins_stddev.append(np.std(b))
+        bins_average = np.array(bins_average)
+        bins_stddev = np.array(bins_stddev)
+
+    # print(f"{len(bins)} {bins_average.size} {bins_stddev.size}")
+    for i in range(len(bins)):
+        z = (bins[i]-bins_average[i])/bins_stddev[i]
+        bins[i] = bins[i][z < 2]
+
+    bins_average = []
+    bins_stddev = []
+    for b in bins:
+        bins_average.append(np.mean(b))
+        bins_stddev.append(np.std(b))
+    bins_average = np.array(bins_average)
+    bins_stddev = np.array(bins_stddev)
+    # print(bins_average)
+    # print(bins_stddev)
+    return window, bins_average, bins_stddev
 
 
 def get_noise(spectrum):
@@ -123,3 +165,4 @@ def get_noise(spectrum):
     z_score = np.abs(spectrum-mean)/stddev
     new = np.extract(z_score < 3, spectrum)
     return new
+
