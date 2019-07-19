@@ -6,7 +6,7 @@ import generate_spectrum as gs
 
 def fit_peaks(spectrum, wavenumbers):
     diff_spectrum = pd.corrected_diff_spectrum(spectrum)
-    noise_spectrum = sf.get_noise(spectrum)
+    noise_spectrum = sf.get_moving_noise(spectrum)
     noise_mean, noise_stdd = np.mean(noise_spectrum), np.std(noise_spectrum)
     peak_results = pd.detect_peaks(spectrum, diff_spectrum)
 

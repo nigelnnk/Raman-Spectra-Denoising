@@ -3,12 +3,10 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import *
-from scipy import signal as sig
-import saveLoadCSV as sl
-import smoothing_functions as sf
-import peak_detection as pd
+
 
 LSIGNAL = np.array([[500, 40, 0.5], [825, 10, 1], [900, 25, 3], [1200, 10, 5]])
+RSIGNAL = np.array([(533.863, 12, 1), (739.928, 6, 2), (805.367, 13, 2), (813.721, 11, 2), (1284.328, 20, 1), (2361.989, 4, 1), (2757.41, 9, 5)])
 
 # The three functions below describe different types of curves found in Raman spectra
 @vectorize(nopython=True)
@@ -47,7 +45,7 @@ def generate_random(wavenumbers, seed=-1):
     peaks = []
     for i in range(n):
         p = random.randint(10, wave.size-10)
-        w = random.randint(5, 30)
+        w = random.randint(3, 20)
         h = random.randint(1, 5)
         # print("{}\t{}\t{}".format(p, w, h))
         peaks.append((wave[p], w, h))
