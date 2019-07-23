@@ -101,8 +101,8 @@ def auto_als_baseline(spectrum, p=0.05):
     m = min(rms)
     L = rms.index(m)/2 + 3
 
-    print(f"Lambda = {L}")
-    print(rms)
+    # print(f"Lambda = {L}")
+    # print(rms)
 
     # TODO automatic calculation of best p value?
     # Perhaps use the (spectrum - baseline) distribution?? Ensures that the correct p is
@@ -177,6 +177,7 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
     peaks = np.array(peaks)
     peak_widths = np.array(peak_widths)
 
+    original_peaks = peaks.copy()
     prominence = sig.peak_prominences(smooth, peaks)[0]
     shift = np.nonzero(prominence == 0)[0]
     for s in shift:
@@ -193,17 +194,10 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
     # Peaks are compared to the noise level of the spectrum
     if noise_stdd == -1 and noise_mean == -1:
         if t == "raman":
-            w, noise_mean, noise_stdd = sf.get_moving_noise(raw_spectrum)
-            z = []
-            for i in range(peaks.size):
-                temp = raw_spectrum.size % w
-                if peaks[i] // w <= temp-1:
-                    ind = peaks[i] // (w+1)
-                else:
-                    ind = peaks[i] // w
-                # print(f"{ind}\t{peaks[i]}\t{w}")
-                z.append((prominence[i]-noise_mean[ind])/noise_stdd[ind])
-            z = np.array(z)
+            bin_len, noise_mean, noise_stdd = sf.get_moving_noise(raw_spectrum)
+            ct = np.cumsum(bin_len)
+            ind = np.searchsorted(ct, peaks)
+            z = (prominence - noise_mean[ind])/noise_stdd[ind]
         elif t == "gamma":
             noise_only = sf.get_noise(raw_spectrum)
             noise_mean = np.mean(noise_only)
@@ -224,9 +218,21 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
     # prominence = prominence[prom_filter]
     # peak_widths = peak_widths[prom_filter]
 
+    final_width = []
+    p, q = 0, 0
+    while p < original_peaks.size and q < peaks.size:
+        if np.abs(original_peaks[p] - peaks[q]) <= 3:
+            final_width.append((peak_widths[p][1] - peak_widths[p][0])/3)
+            p += 1
+            q += 1
+        elif original_peaks[p] < peaks[q]:
+            p += 1
+        elif original_peaks[p] > peaks[q]:
+            q += 1
+
     results_original = {"peaks": peaks,
                         "prom": prominence,
-                        "widths": peak_widths}
+                        "widths": final_width}
     return results_diff, results_original
 
 

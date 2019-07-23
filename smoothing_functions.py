@@ -117,14 +117,16 @@ def get_moving_noise(spectrum):
         bins = np.array_split(spectrum, n)
         bins_average = []
         bins_stddev = []
+        bins_length = []
         for b in bins:
-            bins_average.append(np.mean(b))
             s = np.std(b)
             if s == 0:
                 zero_std = True
                 window *= 2
                 break
+            bins_average.append(np.mean(b))
             bins_stddev.append(np.std(b))
+            bins_length.append(b.size)
         bins_average = np.array(bins_average)
         bins_stddev = np.array(bins_stddev)
 
@@ -142,7 +144,7 @@ def get_moving_noise(spectrum):
     bins_stddev = np.array(bins_stddev)
     # print(bins_average)
     # print(bins_stddev)
-    return window, bins_average, bins_stddev
+    return bins_length, bins_average, bins_stddev
 
 
 def get_noise(spectrum):

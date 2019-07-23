@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import *
 from scipy import signal as sig
+from scipy import optimize as opt
 import saveLoadCSV as sl
 import smoothing_functions as sf
 import peak_detection as pd
@@ -191,6 +192,9 @@ def test_case_3():
     # ax[0].plot(x, sf.convo_filter_n(noise, 101, 30))
     ax[0].plot(x, np.zeros_like(x), c='k', label="Zero")
     ax[0].legend()
+    ax[0].set_xlabel("Wavenumbers / cm^-1")
+    ax[0].set_ylabel("Intensity")
+    ax[0].set_title("Raw Spectrum")
 
     peaks = result_original["peaks"]
     prom = result_original["prom"]
@@ -203,6 +207,9 @@ def test_case_3():
     ax[1].vlines(x=x[peaks], ymin=smooth[peaks] - prom, ymax=smooth[peaks], color='C1', zorder=5, label="Prominence")
     ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
     ax[1].grid(which="both")
+    ax[1].set_xlabel("Wavenumbers / cm^-1")
+    ax[1].set_ylabel("Intensity")
+    ax[1].set_title("Corrected Spectrum")
     plt.legend()
     plt.show()
 
@@ -212,23 +219,21 @@ def test_case_4():
 
     """
     # Valid csv data for Raman - 4, 23, 41, MS39, MS41, MS42, NA19, NA20, NA21
-    # x, noise, signal = sl.load_raman("data/4.csv")
+    # x, noise, signal = sl.load_raman("data/NA20.csv")
     # t = "raman"
 
     # Valid npz data for Gamma - 48, 49, 50, 51, 52, 334, 354
-    x, noise, signal = sl.load_nuclear("data/48.npz")
-    t = "gamma"
+    # x, noise, signal = sl.load_nuclear("data/48.npz")
+    # t = "gamma"
 
-    # wavenumbers, signal = sl.read_spectrum("data/4.csv")
-    # wavenumbers = np.flip(wavenumbers)
-    # x = wavenumbers
-    # signal, correct_peaks = gs.generate_random(x)
-    # print(correct_peaks)
-    # rand = np.random.randn(x.size) * np.amax(signal) / 20
-    # noise = signal + rand
-    # for i in correct_peaks:
-    #     pass
-    #     #check accuracy of correction
+    wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal, correct_peaks = gs.generate_random(x)
+    print(correct_peaks)
+    rand = np.random.randn(x.size) * np.amax(signal) / 20
+    noise = signal + rand
+    t = "gamma"
 
     b, weights = pd.auto_als_baseline(sf.convo_filter_n(noise), 0.05)
     new_noise = noise - b
@@ -242,21 +247,75 @@ def test_case_4():
     # ax[0].scatter(x, weights, s=0.2, alpha=0.7, color='r', zorder=10, label="Weights")
     ax[0].plot(x, np.zeros_like(x), alpha=0.5, color='k')
     ax[0].set_title("Raw Spectrum")
+    ax[0].set_xlabel("Wavenumbers / cm^-1")
+    ax[0].set_ylabel("Intensity")
     ax[0].legend()
-
-    ax[1].plot(x, new_noise, c='C1', alpha=0.5, label="Noise")
-    ax[1].plot(x, smooth, c='C0', alpha=0.7, label="Smooth")
 
     peaks = result_original["peaks"]
     prom = new_noise[peaks]
     np.set_printoptions(suppress=True)
     print(np.vstack((np.array([x[peaks]]), np.array([prom]))).T)
-    # print(prom)
 
+    ax[1].plot(x, new_noise, c='C1', alpha=0.5, label="Noise")
+    ax[1].plot(x, smooth, c='C0', alpha=0.7, label="Smooth")
     ax[1].scatter(x[peaks], new_noise[peaks], color='m', marker="s", label="Peaks", zorder=5)
     ax[1].vlines(x=x[peaks], ymin=0, ymax=prom, color='k', zorder=10, label="Prominence")
     ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
     ax[1].grid(which="both")
+    ax[1].set_xlabel("Wavenumbers / cm^-1")
+    ax[1].set_ylabel("Intensity")
+    ax[1].set_title("Corrected Spectrum")
+
+    plt.legend()
+    plt.show()
+
+
+def test_case_5():
+    """
+    Peak fitting
+    """
+    # Valid csv data for Raman - 4, 23, 41, MS39, MS41, MS42, NA19, NA20, NA21
+    # x, noise, signal = sl.load_raman("data/NA20.csv")
+    # t = "raman"
+
+    # Valid npz data for Gamma - 48, 49, 50, 51, 52, 334, 354
+    # x, noise, signal = sl.load_nuclear("data/48.npz")
+    # t = "gamma"
+
+    wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    wavenumbers = np.flip(wavenumbers)
+    x = wavenumbers
+    signal, correct_peaks = gs.generate_random(x)
+    print(correct_peaks)
+    rand = np.random.randn(x.size) * np.amax(signal) / 20
+    noise = signal + rand
+    t = "gamma"
+
+    b, weights = pd.auto_als_baseline(sf.convo_filter_n(noise), 0.05)
+    new_noise = noise - b
+    ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
+    smooth = sf.convo_filter_n(new_noise)
+    result_diff, result_original = pd.detect_peaks(noise, cs, t=t)
+
+    fig, ax = plt.subplots(ncols=2)
+
+    peaks = result_original["peaks"]
+    widths = result_original["widths"]
+    prom = new_noise[peaks]
+    np.set_printoptions(suppress=True)
+    print(np.vstack((np.array([x[peaks]]), np.array([prom]))).T)
+    # print(result_original["widths"])
+    popt = opt.curve_fit(gs.lorentzian, x, new_noise, (peaks[0], new_noise[peaks[0]], widths[0]))[0]
+
+    ax[1].plot(x, new_noise, c='C1', alpha=0.5, label="Noise")
+    ax[1].plot(x, smooth, c='C0', alpha=0.7, label="Smooth")
+    ax[1].plot(x, gs.lorentzian(x, popt[0], popt[1], popt[2]), c='r', alpha=0.7)
+    ax[1].scatter(x[peaks], new_noise[peaks], color='m', marker="s", label="Peaks", zorder=5)
+    ax[1].vlines(x=x[peaks], ymin=0, ymax=prom, color='k', zorder=10, label="Prominence")
+    ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
+    ax[1].grid(which="both")
+    ax[1].set_xlabel("Wavenumbers / cm^-1")
+    ax[1].set_ylabel("Intensity")
     ax[1].set_title("Corrected Spectrum")
 
     plt.legend()
@@ -264,4 +323,4 @@ def test_case_4():
 
 
 if __name__ == "__main__":
-    test_case_2()
+    test_case_5()
