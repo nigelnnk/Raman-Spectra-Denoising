@@ -30,7 +30,7 @@ def test_case_smoothing():
     ax[0, 0].set_xlabel("Wavenumbers / cm^-1")
     ax[0, 0].set_ylabel("Intensity")
     ax[0, 1].plot(x, noise)
-    ax[0, 1].set_title("Raw Spectrum")
+    ax[0, 1].set_title("Spectrum with generated noise")
     ax[0, 1].set_xlabel("Wavenumbers / cm^-1")
     ax[0, 1].set_ylabel("Intensity")
     convolved = sf.iter_convo_filter(noise, 5)
@@ -39,7 +39,7 @@ def test_case_smoothing():
     ax[1, 0].set_xlabel("Wavenumbers / cm^-1")
     ax[1, 0].set_ylabel("Intensity")
     ax[1, 1].plot(x, sf.convo_filter_n(noise, 5, 20))
-    ax[1, 1].set_title("Convolution filter (20)")
+    ax[1, 1].set_title("Manual Convolution filter (20)")
     ax[1, 1].set_xlabel("Wavenumbers / cm^-1")
     ax[1, 1].set_ylabel("Intensity")
 
@@ -322,5 +322,54 @@ def test_case_5():
     plt.show()
 
 
+def test_case_peaks():
+    # Valid csv data for Raman - 4, 23, 41, MS39, MS41, MS42, NA19, NA20, NA21
+    x, noise, signal = sl.load_raman("data/23.csv")
+    t = "raman"
+
+    b, weights = pd.auto_als_baseline(sf.convo_filter_n(noise), 0.05)
+    new_noise = noise - b
+    ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
+    smooth = sf.convo_filter_n(new_noise)
+    result_diff, result_original = pd.detect_peaks(noise, cs, t=t)
+
+    peaks = result_original["peaks"]
+    prom = new_noise[peaks]
+    np.set_printoptions(suppress=True)
+    print(np.vstack((np.array([x[peaks]]), np.array([prom]))).T)
+
+    fig, ax = plt.subplots(ncols=2)
+    ax[0].axvline(x=1738, c='g', alpha=0.5, label="Ethyl Acetate\n381, 637, 849,\n1117, 1738")
+    ax[0].axvline(x=1117, c='g', alpha=0.5)
+    ax[0].axvline(x=849, c='g', alpha=0.5)
+    ax[0].axvline(x=637, c='g', alpha=0.5)
+    ax[0].axvline(x=381, c='g', alpha=0.5)
+
+    ax[0].axvline(x=1450, c='r', alpha=0.5, label="Methyl Salicylate\n810, 1033,\n1250, 1450")
+    ax[0].axvline(x=1250, c='r', alpha=0.5)
+    ax[0].axvline(x=1033, c='r', alpha=0.5)
+    ax[0].axvline(x=810, c='r', alpha=0.5)
+
+    ax[0].plot(x, noise, c='C0', alpha=1, label="Noise")
+    ax[0].scatter(x[peaks], noise[peaks], color='m', marker="s", label="Algorithm Peaks", zorder=5)
+    ax[0].set_title("Comparison to Theoretical Peaks")
+    ax[0].set_xlabel("Wavenumbers / cm^-1")
+    ax[0].set_ylabel("Intensity")
+    ax[0].legend(loc='upper right')
+
+    ax[1].plot(x, new_noise, c='C1', alpha=0.5, label="Noise")
+    ax[1].plot(x, smooth, c='C0', alpha=0.7, label="Smooth")
+    ax[1].scatter(x[peaks], new_noise[peaks], color='m', marker="s", label="Peaks", zorder=5)
+    ax[1].vlines(x=x[peaks], ymin=0, ymax=prom, color='k', zorder=10, label="Prominence")
+    ax[1].set_xticks(np.arange(round(x[0], -2), x[-1] + 1, 100), minor=True)
+    ax[1].grid(which="both")
+    ax[1].set_xlabel("Wavenumbers / cm^-1")
+    ax[1].set_ylabel("Intensity")
+    ax[1].set_title("Corrected Spectrum")
+
+    plt.legend()
+    plt.show()
+
+
 if __name__ == "__main__":
-    test_case_5()
+    test_case_smoothing()

@@ -94,14 +94,27 @@ def threebythree():
 def baseline():
     import scipy.signal as sig
     import matplotlib.pyplot as plt
-    s = sig.windows.hann(50)
+    s = sig.windows.hann(50) - 0.5
     x = np.linspace(0, 50)
     b = x/50
     fig, ax = plt.subplots(ncols=2)
 
+    ax[0].axhline(y=0, color='k')
     ax[0].plot(x, s)
+    ax[0].set_ylabel("Intensity")
+    ax[0].set_xlabel("Wavenumbers / cm^-1")
+    ax[0].set_ylim([-0.6, 1.2])
+    ax[0].set_xlim([0, 50])
+    ax[0].set_title("Without Baseline")
+
+    ax[1].axhline(y=0, color='k')
     ax[1].plot(x, s+b, label="Modified Signal")
-    ax[1].plot(x, b, alpha=0.5, label="Baseline")
+    ax[1].plot(x, b-0.5, alpha=0.5, label="Baseline")
+    ax[1].set_title("With Baseline")
+    ax[1].set_ylabel("Intensity")
+    ax[1].set_xlabel("Wavenumbers / cm^-1")
+    ax[1].set_ylim([-0.6, 1.2])
+    ax[1].set_xlim([0, 50])
     ax[1].legend()
 
     plt.show()
@@ -123,4 +136,4 @@ def main():
 
 
 if __name__ == "__main__":
-    ethyl_acetate()
+    baseline()
