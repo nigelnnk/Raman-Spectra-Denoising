@@ -12,8 +12,8 @@ def corrected_diff_spectrum(spectrum, noise_window=5, baseline_window=23):
     Processes the given spectrum as detailed in [2] A simple background elimination method
     for Raman spectra by Baek et. al. (2009) to remove baseline errors from spectra.
     :param spectrum: Spectrum to be processed
-    :param noise_window: Number of datapoints, usually less than smallest peak width
-    :param baseline_window: Number of datapoints, usually larger than widest peak width
+    :param noise_window: Number of data points, usually less than smallest peak width
+    :param baseline_window: Number of data points, usually larger than widest peak width
     :return: differentiated and baseline-corrected differentiated spectra
     """
     ans = sf.convo_filter_n(spectrum, noise_window, 3)
@@ -118,13 +118,18 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
     By finding maxima and minima in the differentiated spectrum, one can identify where
     the peaks are, as peaks have a pattern of zero-maxima-zero-minima-zero. Hence, these
     are used to determine if a peak is present by analysing if each maxima has a succeeding
-    minima. Additionally, the maxima and minima must be of a certain height, determined by
-    the standard deviation of noise level in the spectrum.
+    minima. Additionally, the prominence of the peaks must be sufficiently tall, determined
+    by the standard deviation of noise level in the spectrum.
 
     :param raw_spectrum: Noisy spectrum as given by raw data
     :param diff_spectrum: Differentiated spectrum, which can be produced by corrected_diff_spectrum()
     :param noise_mean: Noise mean used to filter peaks. Can be auto calculated.
     :param noise_stdd: Noise std dev used to filter peaks. Can be auto calculated.
+    :param t: type of spectrum being processed.
+            Raman spectra will filter peaks based on the noise levels of different segments
+                of the spectrum. Usually, higher wavenumbers have greater noise levels.
+            Gamma spectra will filter peaks based on the noise level of the entire spectra,
+                as the noise level is consistent throughout the spectra.
     :return: Two dictionaries are returned,for different display purposes:
              Results_diff returns indexes of zeros, troughs and peaks of the differentiated spectrum
              Results_original returns the indexes of peaks and positions for the original spectrum
@@ -173,10 +178,10 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
                 peaks.append(sign_change[h_position]+1)
                 peak_widths.append([sign_change[h_position - 1], sign_change[l_position + 1]])
 
-    # Checks for prominence of peaks and ensures that they are above the mean
     peaks = np.array(peaks)
     peak_widths = np.array(peak_widths)
 
+    # Find best peak that has prominence (i.e. its neighbours on left and right are lower than itself)
     original_peaks = peaks.copy()
     prominence = sig.peak_prominences(smooth, peaks)[0]
     shift = np.nonzero(prominence == 0)[0]
@@ -205,10 +210,8 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
             z = (prominence - noise_mean) / noise_stdd
     else:
         z = (prominence - noise_mean)/noise_stdd
-    # z = (raw_spectrum[peaks] - noise_mean)/noise_stdd
-    # print(peaks)
-    # print(z)
 
+    # Filter peaks such that peaks must be >99.7% of background noise
     peaks = peaks[np.nonzero(z > 3)]
     prominence = sig.peak_prominences(smooth, peaks)[0]
 
@@ -218,6 +221,7 @@ def detect_peaks(raw_spectrum, diff_spectrum, noise_mean=-1, noise_stdd=-1, t="r
     # prominence = prominence[prom_filter]
     # peak_widths = peak_widths[prom_filter]
 
+    # Calculate peak widths based on the differentiated spectra
     final_width = []
     p, q = 0, 0
     while p < original_peaks.size and q < peaks.size:

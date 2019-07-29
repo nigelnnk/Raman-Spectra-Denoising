@@ -106,7 +106,18 @@ def rms_error(original, modified):
 
 
 def get_moving_noise(spectrum):
+    """
+    Separates data into different bins corresponding to the window sizes that are around
+    5% of the whole spectrum length or 200, whichever is larger.
 
+    This is used for Raman spectra, because it has varying levels of noise throughout the
+    spectrum, especially at higher wavenumbers where noise levels are a lot higher.
+    :param spectrum: Spectrum to be analysed for noise levels.
+    :return:
+        bins_length, the size of each bin corresponding to the different spectrum sections
+        bins_average, the average signal intensity of each bin
+        bins_stddev, the standard deviation of the noise in each bin
+    """
     spectrum = np.pad(np.diff(spectrum), (0, 1), 'edge')
     zero_std = True
     window = int(max(spectrum.size / 20, 200))

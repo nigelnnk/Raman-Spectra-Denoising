@@ -79,7 +79,7 @@ def test_case_1():
     still implemented because of its benefits in clearing up the differentiated spectra.
     """
     a = np.linspace(1000, 2000, 1000)
-    b = ((a/200 - 7.5) ** 3) + gs.lorentzian(a, 1800, 10, 5) + np.random.normal(size=a.size) / 1.75
+    b = ((a/200 - 7.5) ** 3) + gs.lorentzian(a, 1800, 10, 5) + gs.lorentzian(a, 1100, 10, 1.5) + np.random.normal(size=a.size) / 1.75
     ds, cs = pd.corrected_diff_spectrum(b, 5, 53)
     fig, ax = plt.subplots(nrows=2, ncols=2)
     ax[0, 0].plot(a, b, c='b')
@@ -112,14 +112,14 @@ def test_case_2():
     """
     Shows how the differentiated spectrum looks like and how it is used to detect peaks
     """
+    # Generate spectrum data / load spectrum data from file
     seed = 314159
     np.random.seed(seed)
     wavenumbers, signal = sl.read_spectrum("data/4.csv")
     wavenumbers = np.flip(wavenumbers)
     x = wavenumbers
-    # signal, correct_peaks = gs.generate_random(x, seed)
-    signal = gs.populate(x, gs.RSIGNAL)
-    # print(correct_peaks)
+    signal, correct_peaks = gs.generate_random(x, seed)
+    print(correct_peaks)
     rand = np.random.randn(x.size) * np.amax(signal) / 20
     noise = signal + rand
 
@@ -130,6 +130,7 @@ def test_case_2():
     ds, cs = pd.corrected_diff_spectrum(noise, 5, 23)
     result_diff, result_original = pd.detect_peaks(noise, cs)
 
+    # Draw top left spectrum, which is the true signal
     fig, ax = plt.subplots(nrows=2, ncols=2)
     # ax.plot(x, sf.convo_filter_n(noise, 5, 20)/4, color='k', alpha=0.3)
     ax[0, 0].plot(x, signal, color='C1')
@@ -137,6 +138,7 @@ def test_case_2():
     ax[0, 0].set_xlabel("Wavenumbers / cm^-1")
     ax[0, 0].set_ylabel("Intensity")
 
+    # Draw bottom left spectrum, which is the corrected differentiated spectrum
     ax[1, 0].plot(x[:-1], cs, color='C1')
     ax[1, 0].scatter(x[result_diff["zeros"]], cs[result_diff["zeros"]], color='b', marker="o", label="Zeros", zorder=5)
     ax[1, 0].scatter(x[result_diff["highs"]], cs[result_diff["highs"]], color='r', marker="x", label="Highs", zorder=5)
@@ -146,6 +148,7 @@ def test_case_2():
     ax[1, 0].set_ylabel("Intensity")
     ax[1, 0].legend()
 
+    # Draw right spectrum with detected peaks. Very early iteration of peak detection algo
     g = ax[0, 1].get_gridspec()
     ax[0, 1].remove()
     ax[1, 1].remove()
@@ -159,6 +162,7 @@ def test_case_2():
     big.set_ylabel("Intensity")
     big.scatter(x[result_original["peaks"]], sm[result_original["peaks"]], color='m', marker="s", label="Peaks", zorder=10)
 
+    # Testing the find_peaks_cwt function in scipy, which is not very good
     # peaks = sig.find_peaks_cwt(sm, np.arange(3, 40), min_snr=1.5)
     # peaks, _ = sig.find_peaks(sm, distance=5, prominence=(0.5, None))
     # big.scatter(x[peaks], sm[peaks], color='m', marker="s", label="Peaks", zorder=10)
@@ -189,7 +193,6 @@ def test_case_3():
     fig, ax = plt.subplots(ncols=2)
     ax[0].plot(x, noise, alpha=0.6, label="Noise")
     ax[0].plot(x, b, c='C1', label="Baseline")
-    # ax[0].plot(x, sf.convo_filter_n(noise, 101, 30))
     ax[0].plot(x, np.zeros_like(x), c='k', label="Zero")
     ax[0].legend()
     ax[0].set_xlabel("Wavenumbers / cm^-1")
@@ -216,24 +219,27 @@ def test_case_3():
 
 def test_case_4():
     """
-
+    Final peak detection algorithm.
+    Left spectrum contains raw data and showcases baseline.
+    Right spectrum contains corrected data as well as peak positions and heights.
+    Algorithm will print out peak positions and corresponding heights to the terminal.
     """
     # Valid csv data for Raman - 4, 23, 41, MS39, MS41, MS42, NA19, NA20, NA21
-    # x, noise, signal = sl.load_raman("data/NA20.csv")
-    # t = "raman"
+    x, noise, signal = sl.load_raman("data/NA20.csv")
+    t = "raman"
 
     # Valid npz data for Gamma - 48, 49, 50, 51, 52, 334, 354
     # x, noise, signal = sl.load_nuclear("data/48.npz")
     # t = "gamma"
 
-    wavenumbers, signal = sl.read_spectrum("data/4.csv")
-    wavenumbers = np.flip(wavenumbers)
-    x = wavenumbers
-    signal, correct_peaks = gs.generate_random(x)
-    print(correct_peaks)
-    rand = np.random.randn(x.size) * np.amax(signal) / 20
-    noise = signal + rand
-    t = "gamma"
+    # wavenumbers, signal = sl.read_spectrum("data/4.csv")
+    # wavenumbers = np.flip(wavenumbers)
+    # x = wavenumbers
+    # signal, correct_peaks = gs.generate_random(x)
+    # print(correct_peaks)
+    # rand = np.random.randn(x.size) * np.amax(signal) / 20
+    # noise = signal + rand
+    # t = "gamma"
 
     b, weights = pd.auto_als_baseline(sf.convo_filter_n(noise), 0.05)
     new_noise = noise - b
@@ -241,21 +247,23 @@ def test_case_4():
     smooth = sf.convo_filter_n(new_noise)
     result_diff, result_original = pd.detect_peaks(noise, cs, t=t)
 
+    # Draw left spectrum
     fig, ax = plt.subplots(ncols=2)
     ax[0].plot(x, noise, label="Original Spectrum")
     ax[0].plot(x, b, label="Baseline")
-    # ax[0].scatter(x, weights, s=0.2, alpha=0.7, color='r', zorder=10, label="Weights")
     ax[0].plot(x, np.zeros_like(x), alpha=0.5, color='k')
     ax[0].set_title("Raw Spectrum")
     ax[0].set_xlabel("Wavenumbers / cm^-1")
     ax[0].set_ylabel("Intensity")
     ax[0].legend()
 
+    # Process peak positions and heights for right spectrum
     peaks = result_original["peaks"]
     prom = new_noise[peaks]
     np.set_printoptions(suppress=True)
     print(np.vstack((np.array([x[peaks]]), np.array([prom]))).T)
 
+    # Draw right spectrum
     ax[1].plot(x, new_noise, c='C1', alpha=0.5, label="Noise")
     ax[1].plot(x, smooth, c='C0', alpha=0.7, label="Smooth")
     ax[1].scatter(x[peaks], new_noise[peaks], color='m', marker="s", label="Peaks", zorder=5)
@@ -272,7 +280,7 @@ def test_case_4():
 
 def test_case_5():
     """
-    Peak fitting
+    Preliminary peak fitting technique. Uses standard function from scipy to fit, but doesn't work in all cases...
     """
     # Valid csv data for Raman - 4, 23, 41, MS39, MS41, MS42, NA19, NA20, NA21
     # x, noise, signal = sl.load_raman("data/NA20.csv")
@@ -323,6 +331,10 @@ def test_case_5():
 
 
 def test_case_peaks():
+    """
+    Just to showcase what the theoretical peaks are in comparison to the peaks detected
+    by the algorithm in the original spectrum.
+    """
     # Valid csv data for Raman - 4, 23, 41, MS39, MS41, MS42, NA19, NA20, NA21
     x, noise, signal = sl.load_raman("data/23.csv")
     t = "raman"

@@ -3,7 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="7c30b3da-0773-496c-a953-b163083ecf2b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/saveLoadCSV.py" beforeDir="false" afterPath="$PROJECT_DIR$/saveLoadCSV.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/peak_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/peak_detection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/smoothing_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/smoothing_functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -41,12 +42,6 @@
     </option>
     <option name="ROOT_SYNC" value="DONT_SYNC" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="667" />
-    <option name="y" value="-1050" />
-    <option name="width" value="854" />
-    <option name="height" value="1017" />
   </component>
   <component name="ProjectId" id="1OUFocJusNz0KowJBZINEn1vvKQ" />
   <component name="PropertiesComponent">
