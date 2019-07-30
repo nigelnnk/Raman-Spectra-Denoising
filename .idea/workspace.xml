@@ -3,9 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="7c30b3da-0773-496c-a953-b163083ecf2b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/peak_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/peak_detection.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/smoothing_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/smoothing_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/generate_spectrum.py" beforeDir="false" afterPath="$PROJECT_DIR$/generate_spectrum.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />

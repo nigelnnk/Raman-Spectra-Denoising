@@ -29,6 +29,12 @@ def pseudoVoigt(x, position, width, height, alpha):
 
 @njit
 def populate(x, list_of_signals):
+    """
+    Reads in a list of peak properties and draws the corresponding lorenztian function.
+    :param x: the x-axis of the spectra in wavenumbers
+    :param list_of_signals: the peak properties for drawing
+    :return: the final spectrum
+    """
     i = np.zeros(x.size)
     for a in range(list_of_signals.shape[0]):
         i += lorentzian(x, list_of_signals[a, 0], list_of_signals[a, 1], list_of_signals[a, 2])
@@ -36,6 +42,12 @@ def populate(x, list_of_signals):
 
 
 def generate_random(wavenumbers, seed=-1):
+    """
+    Generate random spectra (without baseline) for testing purposes
+    :param wavenumbers: the x-axis of the spectrum
+    :param seed: the seed for the random number generator
+    :return: A random spectrum witout baseline, as well as peak properties
+    """
     if seed != -1:
         np.random.seed(seed)
     wave = wavenumbers.copy()
